@@ -1,111 +1,142 @@
 const express = require("express")
-const db = require("../../db")
+const student = require("../../models/student")
+const { Op, QueryTypes, Sequelize } = require("sequelize")
+const sequelize = require("../../db")
+const project = require("../../models/project")
 
 const router = express.Router()
 
-router.get("/", async(req, res) =>{
-    const order = req.query.order || 'asc'
-    const offset = req.query.offset || 0
-    const limit = req.query.limit || 10
 
-    delete req.query.order
-    delete req.query.offset
-    delete req.query.limit
 
-    let query = 'SELECT * FROM "students"'
-
-    const params = []
-    for (queryParam in req.query){
-        params.push(req.query[queryParam])
-        if (params.length === 1) // for the first, I'll add the where clause
-            query += `WHERE ${queryParam} = $${params.length} `
-        else // the all the rest, it'll start with AND
-            query += ` AND ${queryParam} = $${params.length} `
+router.post("/", async (req, res) => {
+    console.log("test")
+    try {
+        delete req.body.id
+        const Student = await student.create(req.body)
+        res.send(Student)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
     }
+})
 
-    query += " ORDER BY name " + order  //adding the sorting 
+router.get("/", async(req, res) =>{
+    try {
+        const limit = req.query.limit || 10
+        const offset = req.query.offset || 0
+        const order = req.query.order || "asc"
 
-    params.push (limit)
-    query += ` LIMIT $${params.length} `
-    params.push(offset)
-    query += ` OFFSET $${params.length}`
-    // query += ` LIMIT $${params.length+1} OFFSET $${params.length+2}` //adding the pagination
-    // params.push(limit)
-    // params.push(offset) 
-    console.log(query)
+        delete req.query.limit
+        delete req.query.offset
+        delete req.query.order
 
-    //you can also specify just the fields you are interested in, like:
-    //SELECT id, category, img, title, price FROM "students" 
-    const response = await db.query(query, params)
-    res.send(response.rows)
+        const students = await student.findAll({
+            where : {
+                ...req.query
+            },
+            offset: offset,
+            limit: limit,
+            order: [
+                ["name", order]
+            ],
+            include: project
+        })
+        res.send(students)
+        
+    }
+    catch (e) {
+        console.log(e)
+        res.status(500).send(e)
+    }
+})
+
+
+router.get("/search", async (req, res) => {
+    try {
+        //sequelize.query(`SELECT * FROM "students"`, QueryTypes.SELECT)
+        const result = await student.findAll({
+            where: {
+                [Op.or]: [
+                        {
+                            name: {
+                                [Op.iLike]: `%${req.query.name}%`
+                            }
+                        },
+                        {
+                            surname: {
+                                [Op.iLike]: `%${req.query.surname}%`
+                            }
+                        }
+                ]
+            }
+        })
+
+        res.send(result)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
+    }
 })
 
 
 
 router.get("/:id", async (req, res)=>{
-    const response = await db.query('SELECT id, name, surname, email, dateofbirth FROM "students" WHERE id = $1', 
-                                                                                        [ req.params.id ])
+    try {
+        const Student = await student.findOne({
+            where: {
+                id: req.params.id
+            },
+            include: project
+        })
 
-    if (response.rowCount === 0) 
-        return res.status(404).send("Not found")
+        if (Student)
+            res.send(Student)
+        else
+            res.status(404).send("Not found")
 
-    res.send(response.rows[0])
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
+    }
 })
 
-router.post("/", async (req, res) => {
-    const resp = await db.query(`INSERT INTO "students" (id, name, surname, email, dateofbirth)
-                                    Values ($1, $2, $3, $4, $5)
-                                    RETURNING *`,
-                                    [ req.body.id, req.body.name, req.body.surname, req.body.email, req.body.dateofbirth])
 
-    //console.log(resp)
-    res.send(resp.rows[0])
-})
 router.delete("/:id", async (req, res) => {
-    const response = await db.query(`DELETE FROM "students" WHERE id = $1`, [ req.params.id ])
+    try {
+        const result = await student.destroy({
+            where: {
+                id: req.params.id
+            }
+        })
 
-    if (response.rowCount === 0)
-        return res.status(404).send("Not Found")
-    
-    res.send("OK")
+        if (result === 1)
+            res.send("DELETED")
+        else
+            res.status(404).send("Not Found")
+
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
+    }
 })
 
 
 router.put("/:id", async (req, res)=> {
     try {
-        let params = []
-        let query = 'UPDATE "students" SET '
-        for (bodyParamName in req.body) {
-            query += // for each element in the body I'll add something like parameterName = $Position
-                (params.length > 0 ? ", " : '') + //I'll add a coma before the parameterName for every parameter but the first
-                bodyParamName + " = $" + (params.length + 1) // += Category = $1 
+        const Student = await student.update({
+            ...req.body
+        }, {
+            where: { id: req.params.id }
+        })
 
-            params.push(req.body[bodyParamName]) //save the current body parameter into the params array
-        }
+        if (Student[0] === 1)
+            res.send("OK")
+        else
+            res.status(404).send("Not found")
 
-        params.push(req.params.id) //push the id into the array
-        query += " WHERE id = $" + (params.length) + " RETURNING *" //adding filtering for id + returning
-        console.log(query)
-
-        const result = await db.query(query, params) //querying the DB for updating the row
-
-        // const result = await db.query(`UPDATE "students" 
-        //                             SET Category = $1,
-        //                             Img = $2,
-        //                             Title = $3,
-        //                             Price = $4
-        //                             WHERE id = $5
-        //                             RETURNING *`,
-        //                             [ req.body.category, req.body.img, req.body.title, req.body.price, req.params.id])
-        
-        if (result.rowCount === 0) //if no element match the specified id => 404
-            return res.status(404).send("Not Found")
-
-        res.send(result.rows[0]) //else, return the updated version
-    }
-    catch(ex) {
-        console.log(ex)
-        res.status(500).send(ex)
+    } catch (e) {
+        console.log(e)
+        res.status(500).send(e)
     }
 })
 
