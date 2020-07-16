@@ -1,83 +1,68 @@
 const express = require("express")
-const db = require("../../db")
+const project = require("../../models/project")
 
 const router = express.Router()
-
-/* const getAll = (request, response) => {
-    db.query('SELECT * FROM data.projects;SELECT * FROM data.students', (error, data) => {
-      if (error) {
-        throw error;
-      }
-      response.status(200).json({projects: data[0].rows, students: data[1].rows});
-    }) */
-  
-router.get('/all', async (req, res) => {
-    db.query('SELECT * FROM projects;SELECT students.email FROM students', (error, data) => {
-        if (error) {
-          throw error;
-        }
-        res.status(200).json({projects: data[0].rows, students: data[1].rows});
-      })
-});
-
-
-router.get("/:projectid", async (req, res)=>{
-    const response = await db.query('SELECT projectid, name, description, creationdate, repourl, liveurl, studentid FROM "projects" WHERE projectid = $1', 
-                                                                                        [ req.params.projectid ])
-
-    if (response.rowCount === 0) 
-        return res.status(404).send("Not found")
-
-    res.send(response.rows[0])
-})
-
-
-
-router.post("/", async (req, res) => {
-    const resp = await db.query(`INSERT INTO "projects" (projectid, name, description, creationdate, repourl, liveurl, studentid)
-                                    Values ($1, $2, $3, $4, $5, $6, $7)
-                                    RETURNING *`,
-                                    [ req.body.projectid, req.body.name, req.body.description, req.body.creationdate, req.body.repourl, req.body.liveurl, req.body.studentid])
-
-    //console.log(resp)
-    res.send(resp.rows[0])
-})
-
-router.put("/:projectid", async (req, res)=> {
-    try {
-        let params = []
-        let query = 'UPDATE "projects" SET '
-        for (bodyParamName in req.body) {
-            query += // for each element in the body I'll add something like parameterName = $Position
-                (params.length > 0 ? ", " : '') + //I'll add a coma before the parameterName for every parameter but the first
-                bodyParamName + " = $" + (params.length + 1) // += Category = $1 
-
-            params.push(req.body[bodyParamName]) //save the current body parameter into the params array
-        }
-
-        params.push(req.params.projectid) //push the projectid into the array
-        query += " WHERE projectid = $" + (params.length) + " RETURNING *" //adding filtering for projectid + returning
-        console.log(query)
-
-        const result = await db.query(query, params) //querying the DB for updating the row
-
-        // const result = await db.query(`UPDATE "Books" 
-        //                             SET Category = $1,
-        //                             Img = $2,
-        //                             Title = $3,
-        //                             Price = $4
-        //                             WHERE projectid = $5
-        //                             RETURNING *`,
-        //                             [ req.body.category, req.body.img, req.body.title, req.body.price, req.params.projectid])
-        
-        if (result.rowCount === 0) //if no element match the specified projectid => 404
-            return res.status(404).send("Not Found")
-
-        res.send(result.rows[0]) //else, return the updated version
+//here I am using id because project should be for a particular id
+router.get("/:id", async (req, res)=>{
+    try{
+        res.send(await project.findAll({
+            where: {
+                projectid: req.params.id
+            }
+        }))
     }
-    catch(ex) {
-        console.log(ex)
-        res.status(500).send(ex)
+    catch(e){
+        console.log(e)
+        res.status(500).send(e)
+    }
+})
+
+router.post("/:id", async (req,res)=>{
+    try{
+        res.send(await project.create({
+            ...req.body,
+            studentid: req.params.id
+        }))
+    }
+    catch(e){
+        console.log(e)
+        res.status(500).send(e)
+    }
+})
+
+router.put("/:projectid", async (req, res)=>{
+    try{
+        delete req.body.studentid // we don't want to update the studentid field. Once a project is created, it should be fixed on one book
+        //delete req.body.userid // we don't want to update the userid field. Once a projecter wrote a project, that project is fixed to him
+
+        const result = await project.update({ //update the project
+            ...req.body  // <= all the fields included in the req.body
+        }, {
+            where: { // for the element with id = req.params.projectId
+                projectid: req.params.projectid
+            }
+        })
+
+        if (result[0] === 1) // if we updated something
+            res.send("OK") // we return OK 
+        else 
+            res.status(404).send("Not found") // probably the ID was not there, NOT FOUND
+    }
+    catch(e){
+        console.log(e)
+        res.status(500).send(e)
+    }
+})
+
+router.delete("/:projectId", async (req, res)=>{
+    try{
+        res.send(await project.destroy({
+            where: { id: req.params.projectId }
+        }))
+    }
+    catch(e){
+        console.log(e)
+        res.status(500).send(e)
     }
 })
 
