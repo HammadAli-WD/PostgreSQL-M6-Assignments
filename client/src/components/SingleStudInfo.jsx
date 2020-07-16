@@ -15,7 +15,7 @@ class SingleStudInfo extends Component {
 
  
     render() {
-        const { name, surname, dateOfBirth, country, id } = this.props.item
+        const { name, surname, dateOfBirth, email, id } = this.props.item
 
         return (
             
@@ -25,7 +25,7 @@ class SingleStudInfo extends Component {
           <Card border="primary" style={{ width: '18rem' }}>
             <Card.Header>{name}-{surname}</Card.Header>
               <Card.Body>
-                <Card.Title>{country}</Card.Title>
+                <Card.Title>{email}</Card.Title>
                 <Card.Text>
                 {dateOfBirth}
                 </Card.Text>

@@ -20,8 +20,10 @@ class BackOffice extends Component {
                                 openModal: false
                             })}
                             />
-
+                <Row className="mt-5" >
+                    
                 {this.state.students.map(StudInfo => 
+                <Col xs={6} md={4}>
                     <SingleStudInfo item={StudInfo}
                         onDelete={(id) => 
                             this.setState({
@@ -30,7 +32,10 @@ class BackOffice extends Component {
                         
                  
                     /> 
-                )} 
+                    </Col>
+                )}
+                
+                </Row> 
             </Container>
         )
     }

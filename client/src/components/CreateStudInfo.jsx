@@ -4,10 +4,10 @@ import { Modal, Button, Form } from "react-bootstrap"
 class CreateStudInfo extends Component {
       
     state = {
-      surname: "",
+        surname: "",
         name: "",
-        dateOfBirth: "",
-        id: "",
+        dateofbirth: "",
+        //id: "",
         email: "",
     }
 
@@ -25,7 +25,7 @@ class CreateStudInfo extends Component {
         })
         
         if (studentResp.ok) {// check if the response is ok
-            this.props.onNewstudent(newstudent)// tell the parent we have a new kid in town
+            this.props.onNewStudInfo(newstudent)// tell the parent we have a new kid in town
         }
     }
 
@@ -39,13 +39,13 @@ class CreateStudInfo extends Component {
                 </Modal.Header>
                 <Modal.Body>
                     <Form>
-                        <Form.Group controlId="id">
+                        {/* <Form.Group controlId="id">
                             <Form.Label>id</Form.Label>
                             <Form.Control type="text"
                                 onChange={(e) => this.setState({ id: e.currentTarget.value })}
                                 value={this.state.id}
                                 placeholder="id - Unique student ID" />
-                        </Form.Group>
+                        </Form.Group> */}
                         <Form.Group controlId="name">
                             <Form.Label>name</Form.Label>
                             <Form.Control
@@ -67,12 +67,12 @@ class CreateStudInfo extends Component {
                                 onChange={(e) => this.setState({ email: e.currentTarget.value })}
                                 email="text" placeholder="email" />
                         </Form.Group>
-                        <Form.Group controlId="dateOfBirth">
-                            <Form.Label>dateOfBirth</Form.Label>
+                        <Form.Group controlId="dateofbirth">
+                            <Form.Label>dateofbirth</Form.Label>
                             <Form.Control
-                                value={this.state.dateOfBirth}
-                                onChange={(e) => this.setState({ dateOfBirth: e.currentTarget.value })}
-                                type="date" placeholder="dateOfBirth" />
+                                value={this.state.dateofbirth}
+                                onChange={(e) => this.setState({ dateofbirth: e.currentTarget.value })}
+                                type="date" placeholder="dateofbirth" />
                         </Form.Group>
                         
                     </Form>

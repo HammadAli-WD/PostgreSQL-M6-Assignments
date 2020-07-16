@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { withRouter } from "react-router-dom"
-import { Row, Col, Form, Button, Image} from "react-bootstrap"
+import { Row, Col, Form, Button, Image, Container} from "react-bootstrap"
 //import CommentsList from './CommentsList'
 
 class Edit extends Component {
@@ -43,9 +43,10 @@ class Edit extends Component {
     render() {
         const { name, email, surname, dateofbirth, id } = this.state
         return (
+            <Container className="mt-5" >
             <Row>
                 
-                <Col>
+                <Col className="mt-5" >
                 <Form>
                         <Form.Group controlId="id">
                             <Form.Label>id</Form.Label>
@@ -95,6 +96,7 @@ class Edit extends Component {
                 </Col>
 
             </Row>
+            </Container>
         )
     }
     
